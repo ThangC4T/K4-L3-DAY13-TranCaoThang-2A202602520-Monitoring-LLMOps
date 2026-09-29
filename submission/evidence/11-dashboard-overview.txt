@@ -1,22 +1,31 @@
 {
-  "time_source": "data/logs.jsonl local workload with Langfuse enabled",
-  "traffic_request_count": 23,
-  "response_count": 23,
+  "time_source": "data/logs.jsonl local workload with Langfuse and challenge enabled",
+  "traffic_request_count": 28,
+  "response_count": 28,
   "latency_ms": {
-    "p50": 457,
-    "p95": 1419,
-    "p99": 1514,
-    "ttft_p95": 50
+    "p50": 472,
+    "p95": 2658,
+    "p99": 3826,
+    "ttft_p95": 51
   },
   "errors": {
     "request_failed_count": 0,
     "error_rate_pct": 0.0,
     "retrieval_success_rate_pct": 100.0
   },
-  "cost_total_usd": 0.050595,
+  "cost_total_usd": 0.059607,
   "tokens": {
-    "tokens_in": 880,
-    "tokens_out": 3197
+    "tokens_in": 1109,
+    "tokens_out": 3752
   },
-  "quality_score_avg": 0.84
+  "quality_score_avg": 0.84,
+  "challenge": {
+    "challenge_id": "day13-k4-l3a-monitoring-llmops-v1",
+    "incident": "rag_slow",
+    "selected_correlation_id": "req-4e2db2f5",
+    "trace_id": "4f8b09cbadd99d11905ada7d211fca4c",
+    "root_latency_s": 3.828,
+    "retrieval_latency_s": 2.501,
+    "generation_latency_s": 0.157
+  }
 }

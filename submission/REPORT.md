@@ -7,7 +7,7 @@
 - **Lop:** K4-L3A
 - **Repository URL:** https://github.com/ThangC4T/K4-L3-DAY13-TranCaoThang-2A202602520-Monitoring-LLMOps
 - **Commit SHA cuoi:** se lay bang `git log -1 --oneline` sau commit cuoi va nop tren LMS/Codelabs
-- **Challenge ID:** chua co file challenge chinh thuc tu Lab Coach
+- **Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1`
 - **Ten project Langfuse ca nhan:** `day13-k4-l3a-2A202602520`
 
 ## 2. Evidence index
@@ -24,10 +24,10 @@
 | Trace metadata | `evidence/08-trace-metadata.png` |
 | Prompt versions | `evidence/09-prompt-versions.png`; text check `evidence/09-prompt-versions.txt` |
 | Prompt rollback | `evidence/10-prompt-rollback.png`; text check `evidence/10-prompt-rollback.txt` |
-| Dashboard runtime | `evidence/11-dashboard-overview.png`; text summary `evidence/11-dashboard-overview.txt` |
-| Incident metric | Chua co vi chua nhan challenge chinh thuc |
-| Incident log | Chua co vi chua nhan challenge chinh thuc |
-| Incident trace | Chua co vi chua nhan challenge chinh thuc |
+| Dashboard runtime | `evidence/11-dashboard-overview-challenge.png`; text summary `evidence/11-dashboard-overview.txt` |
+| Incident metric | `evidence/12-incident-metric.png` |
+| Incident log | `evidence/13-incident-log.png` |
+| Incident trace | `evidence/14-incident-trace.png` |
 
 ## 3. Ket qua ky thuat
 
@@ -36,9 +36,9 @@
 | `validate_logs.py` | Baseline starter chua dat CP1 | 100/100 | Log co correlation ID, enrichment va khong con PII tho |
 | `validate_dashboard.py` | Dashboard contract co san | 6/6 panel hop le | Du 6 panel latency, traffic, errors, cost, tokens, quality |
 | `pytest` | Chua xac nhan truoc khi sua | 22 passed | Tat ca public tests pass |
-| So traces hop le | Chua co trace truoc khi cau hinh Langfuse | >=20 request da tao trace/observations | Evidence `06-trace-list.png` cho thay trace list co du lieu trong project ca nhan |
+| So traces hop le | Chua co trace truoc khi cau hinh Langfuse | >=28 request da tao trace/observations | Evidence `06-trace-list.png` cho thay trace list co du lieu trong project ca nhan |
 | So PII leak | Chua xac nhan truoc CP1 | 0 | Validator khong phat hien PII leak trong `data/logs.jsonl` |
-| Latency P95 / TTFT P95 | Chua xac nhan truoc CP1 | 1419ms / 50ms tren workload local | Xem `evidence/11-dashboard-overview.txt` |
+| Latency P95 / TTFT P95 | Chua xac nhan truoc CP1 | 2658ms / 51ms tren workload local + challenge | Xem `evidence/11-dashboard-overview.txt` |
 | Retrieval success rate | Chua xac nhan truoc CP1 | 100% tren workload local | Xem `evidence/11-dashboard-overview.txt` |
 
 ## 4. Logging va PII
@@ -68,14 +68,14 @@
 
 ## 7. Dieu tra challenge
 
-- **Challenge ID:** Chua co file challenge chinh thuc tu Lab Coach.
-- **Khoang thoi gian dieu tra:** Chua thuc hien challenge chinh thuc.
-- **Trieu chung tu metrics:** Chua co du lieu challenge chinh thuc.
-- **Log line va correlation ID lien quan:** Chua co du lieu challenge chinh thuc.
-- **Trace ID va span gay anh huong:** Chua co du lieu challenge chinh thuc.
-- **Root cause:** Chua ket luan khi chua co challenge chinh thuc.
-- **Fix action:** Se dua ra sau khi co evidence metric -> log -> trace cua challenge.
-- **Preventive measure:** Se dua ra sau khi co root cause cua challenge.
+- **Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1`
+- **Khoang thoi gian dieu tra:** 2026-09-29 14:25:20Z den 14:25:35Z.
+- **Trieu chung tu metrics:** Challenge workload tao latency spike tren feature `monitoring`; request tieu bieu `req-4e2db2f5` co server `latency_ms=3826`, vuot SLO 3000ms, trong khi `ttft_ms=50` van binh thuong.
+- **Log line va correlation ID lien quan:** `response_sent` tai `2026-09-29T14:25:24.623034Z`, `correlation_id=req-4e2db2f5`, `session_id=k4-l3a-challenge-s04`, `tool_name=retrieval`, `tool_success=true`, `latency_ms=3826`.
+- **Trace ID va span gay anh huong:** Trace `4f8b09cbadd99d11905ada7d211fca4c`; root `lab-agent-run` latency 3.828s; child `retrieval` latency 2.501s; `llm-generate` chi 0.157s.
+- **Root cause:** Incident `rag_slow` lam retrieval span cham, gay tail latency cho request monitoring; generation va TTFT khong phai bottleneck.
+- **Fix action:** Tat incident `rag_slow`/rollback thay doi retrieval, kiem tra vector store hoac retrieval backend, va giam concurrency neu retrieval dang bi nghẽn.
+- **Preventive measure:** Duy tri alert `high_latency_p95`, them theo doi retrieval span duration/doc count, va dung runbook loc `correlation_id` tu log sang trace truoc khi ket luan root cause.
 
 ## 8. Giai thich va tu danh gia
 
@@ -85,13 +85,13 @@
 - **Cach hieu luong Metrics -> Logs -> Traces:** Metrics cho biet trieu chung va khoang thoi gian; logs loc request cu the bang `correlation_id`; trace cung `correlation_id` cho biet span retrieval hay generation gay cham/loi; tu do ket luan root cause.
 - **Vai tro cua prompt version, token/cost, SLO hoac rollback trong van hanh LLM:** Prompt version giup so sanh va rollback hanh vi model; token/cost giup phat hien cost spike; SLO/error budget bien chat luong van hanh thanh nguong canh bao cu the.
 - **Dieu quan trong nhat da hoc:** Observability cho LLM API can noi duoc metric, log va trace bang cung mot correlation ID, dong thoi khong lam lo PII.
-- **Han che hoac phan chua hoan thanh, neu co:** Chua co challenge evidence vi chua nhan file challenge chinh thuc tu Lab Coach.
+- **Han che hoac phan chua hoan thanh, neu co:** Khong co phan chua hoan thanh da biet; challenge evidence da duoc bo sung sau khi nhan file chinh thuc.
 
 ## 9. Checklist truoc khi nop
 
 - [ ] Ket qua va evidence thuoc commit SHA cuoi.
 - [x] Tat ca anh/output mo duoc bang duong dan tuong doi.
-- [ ] Incident evidence noi dung metric -> log -> trace, sau khi Lab Coach mo challenge chinh thuc.
+- [x] Incident evidence noi dung metric -> log -> trace.
 - [x] Trace/prompt evidence thuoc project Langfuse ca nhan va anh khong lo key/secret.
 - [x] Repository chay lai duoc theo README.
 - [x] Khong commit `.env`, API key, `.venv`, `data/logs.jsonl` hoac `config/challenge.json`.
