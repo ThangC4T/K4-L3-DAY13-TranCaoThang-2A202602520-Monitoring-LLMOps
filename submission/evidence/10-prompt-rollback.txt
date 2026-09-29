@@ -1,0 +1,5 @@
+promote: production_version=2
+v2-run-1: status=200 correlation_id=req-f1232814
+v2-run-2: status=200 correlation_id=req-45f51757
+v2-run-3: status=200 correlation_id=req-200f0ae4
+rollback: production_version=1; candidate_version=2

@@ -1,0 +1,22 @@
+{
+  "time_source": "data/logs.jsonl local workload with Langfuse enabled",
+  "traffic_request_count": 23,
+  "response_count": 23,
+  "latency_ms": {
+    "p50": 457,
+    "p95": 1419,
+    "p99": 1514,
+    "ttft_p95": 50
+  },
+  "errors": {
+    "request_failed_count": 0,
+    "error_rate_pct": 0.0,
+    "retrieval_success_rate_pct": 100.0
+  },
+  "cost_total_usd": 0.050595,
+  "tokens": {
+    "tokens_in": 880,
+    "tokens_out": 3197
+  },
+  "quality_score_avg": 0.84
+}

@@ -1,25 +1,28 @@
 alerts:
-  - name: TODO_alert_1
-    severity: TODO
-    condition: TODO
-    duration: TODO
+  - name: high_latency_p95
+    severity: page
+    condition: 'p95(latency_ms) > 3000 for event == "response_sent"'
+    duration: 5m
     type: symptom-based
     channel: slack
-    owner: TODO
-    runbook: docs/alerts.md#alert-1
-  - name: TODO_alert_2
-    severity: TODO
-    condition: TODO
-    duration: TODO
+    slack_channel: "#llmops-alerts"
+    owner: llmops-oncall
+    runbook: docs/alerts.md#alert-1-high-latency-p95
+  - name: elevated_error_rate
+    severity: page
+    condition: 'count(event == "request_failed") / count(event == "request_received") * 100 > 2'
+    duration: 5m
     type: symptom-based
     channel: slack
-    owner: TODO
-    runbook: docs/alerts.md#alert-2
-  - name: TODO_alert_3
-    severity: TODO
-    condition: TODO
-    duration: TODO
+    slack_channel: "#llmops-alerts"
+    owner: llmops-oncall
+    runbook: docs/alerts.md#alert-2-elevated-error-rate
+  - name: low_retrieval_success
+    severity: ticket
+    condition: 'count(tool_success == true) / count(tool_success != null) * 100 < 90'
+    duration: 10m
     type: symptom-based
     channel: slack
-    owner: TODO
-    runbook: docs/alerts.md#alert-3
+    slack_channel: "#llmops-alerts"
+    owner: llmops-oncall
+    runbook: docs/alerts.md#alert-3-low-retrieval-success

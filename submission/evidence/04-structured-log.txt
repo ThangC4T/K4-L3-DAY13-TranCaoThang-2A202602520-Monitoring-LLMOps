@@ -1,0 +1,23 @@
+{
+  "service": "api",
+  "latency_ms": 151,
+  "ttft_ms": 50,
+  "tokens_in": 49,
+  "tokens_out": 122,
+  "cost_usd": 0.001977,
+  "quality_score": 0.8,
+  "tool_name": "retrieval",
+  "tool_success": true,
+  "payload": {
+    "answer_preview": "Starter answer. You should improve this output logic and add better quality chec..."
+  },
+  "event": "response_sent",
+  "model": "claude-sonnet-4-5",
+  "env": "dev",
+  "session_id": "session-01",
+  "user_id_hash": "2a2006df8771",
+  "correlation_id": "req-99643fa9",
+  "feature": "qa",
+  "level": "info",
+  "ts": "2026-09-29T12:13:07.437517Z"
+}

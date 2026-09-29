@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import os
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Any, Iterator
 
 from . import metrics
 from .mock_llm import FakeLLM
@@ -37,7 +39,8 @@ class LabAgent:
         message: str,
         correlation_id: str,
     ) -> AgentResult:
-        langfuse_client = get_langfuse_client()
+        enabled = tracing_enabled()
+        langfuse_client = get_langfuse_client() if enabled else _NoopTracingClient()
         with propagate_attributes(
             user_id=hash_user_id(user_id),
             session_id=session_id,
@@ -51,13 +54,29 @@ class LabAgent:
             },
         ):
             started = time.perf_counter()
-            docs = retrieve(message)
+            with _start_observation(
+                langfuse_client,
+                name="retrieval",
+                as_type="retriever",
+                input={"query_preview": summarize_text(message)},
+                metadata={"correlation_id": correlation_id, "feature": feature},
+            ) as retrieval_observation:
+                retrieval_started = time.perf_counter()
+                docs = retrieve(message)
+                _update_observation(
+                    retrieval_observation,
+                    output={"doc_count": len(docs)},
+                    metadata={
+                        "doc_count": len(docs),
+                        "latency_ms": int((time.perf_counter() - retrieval_started) * 1000),
+                    },
+                )
             prompt = resolve_prompt(
                 langfuse_client,
                 feature=feature,
                 docs=docs,
                 message=message,
-                enabled=tracing_enabled(),
+                enabled=enabled,
             )
             langfuse_client.update_current_span(
                 metadata={
@@ -71,13 +90,45 @@ class LabAgent:
                 },
                 version=prompt.version,
             )
-            # TODO (CP2): instrument retrieve() and FakeLLM.generate() as child
-            # observations. The nested generation must receive prompt, usage and cost.
-            with propagate_attributes(prompt=prompt.managed_prompt):
-                response = self.llm.generate(prompt.text)
+            with _start_observation(
+                langfuse_client,
+                name="llm-generate",
+                as_type="generation",
+                input={"prompt_preview": summarize_text(prompt.text)},
+                model=self.model,
+                metadata={
+                    "correlation_id": correlation_id,
+                    "prompt_name": prompt.name,
+                    "prompt_label": prompt.label,
+                    "prompt_version": prompt.version,
+                    "prompt_source": prompt.source,
+                },
+            ) as generation_observation:
+                with propagate_attributes(prompt=prompt.managed_prompt):
+                    response = self.llm.generate(prompt.text)
+                cost_usd = self._estimate_cost(
+                    response.usage.input_tokens,
+                    response.usage.output_tokens,
+                )
+                generation_payload = {
+                    "model": response.model,
+                    "usage_details": {
+                        "input_tokens": response.usage.input_tokens,
+                        "output_tokens": response.usage.output_tokens,
+                        "total_tokens": response.usage.input_tokens
+                        + response.usage.output_tokens,
+                    },
+                    "cost_details": {"total": cost_usd},
+                    "metadata": {
+                        "ttft_ms": response.ttft_ms,
+                        "cost_usd": cost_usd,
+                    },
+                    "output": {"answer_preview": summarize_text(response.text)},
+                }
+                _update_current_generation(langfuse_client, **generation_payload)
+                _update_observation(generation_observation, **generation_payload)
             quality_score = self._heuristic_quality(message, response.text, docs)
             latency_ms = int((time.perf_counter() - started) * 1000)
-            cost_usd = self._estimate_cost(response.usage.input_tokens, response.usage.output_tokens)
 
         metrics.record_request(
             latency_ms=latency_ms,
@@ -114,3 +165,63 @@ class LabAgent:
         if "[REDACTED" in answer:
             score -= 0.2
         return round(max(0.0, min(1.0, score)), 2)
+
+
+@contextmanager
+def _start_observation(client: Any, **kwargs: Any) -> Iterator[Any | None]:
+    start = getattr(client, "start_as_current_observation", None)
+    if not callable(start):
+        yield None
+        return
+
+    try:
+        context_manager = start(**kwargs)
+    except TypeError:
+        minimal_kwargs = {
+            key: value for key, value in kwargs.items() if key in {"name", "as_type", "input", "metadata"}
+        }
+        context_manager = start(**minimal_kwargs)
+
+    with context_manager as observation:
+        yield observation
+
+
+def _update_observation(observation: Any | None, **kwargs: Any) -> None:
+    if observation is None:
+        return
+    update = getattr(observation, "update", None)
+    if callable(update):
+        try:
+            update(**kwargs)
+        except TypeError:
+            update(
+                **{
+                    key: value
+                    for key, value in kwargs.items()
+                    if key in {"output", "metadata", "model", "usage_details", "cost_details"}
+                }
+            )
+
+
+def _update_current_generation(client: Any, **kwargs: Any) -> None:
+    update = getattr(client, "update_current_generation", None)
+    if not callable(update):
+        return
+    try:
+        update(**kwargs)
+    except TypeError:
+        update(
+            **{
+                key: value
+                for key, value in kwargs.items()
+                if key in {"model", "usage_details", "cost_details", "metadata", "output"}
+            }
+        )
+
+
+class _NoopTracingClient:
+    def update_current_span(self, **_: Any) -> None:
+        return None
+
+    def update_current_generation(self, **_: Any) -> None:
+        return None
